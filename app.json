@@ -83,6 +83,14 @@
     },
     "experiments": {
       "baseUrl": "/NosePrint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/5f2c474e-3afe-4fba-b5a5-3052fd6ae6bf",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "fingerprint"
     }
   }
 }
