@@ -39,6 +39,12 @@ npx eas-cli@latest build -p ios --profile production       # needs an Apple Deve
 ```
 Bundle ID / package: `com.noseprint.app` (set in `app.json`).
 
+## Web landing page & demo
+On web, `/` shows a landing page (`app/index.web.tsx`) with an interactive photo→tattoo slider and a clickable, step-by-step demo. The app itself is at `/start`; phones open the app directly.
+- Demo images in `public/demo/` were rendered by the real pipeline.
+- Optional narration: record `public/demo/voice/step-1.mp3` … `step-5.mp3`. Script and recording tips are in [docs/demo-narration.md](docs/demo-narration.md).
+- Freeze a demo frame for screenshots: `/?demo=<0-4>&t=<ms>`.
+
 ## Let web visitors download the Android APK
 The Home screen (web only) shows **"Download Android app (APK)"** when an APK is available:
 1. Build it: `npx eas-cli@latest build -p android --profile preview` and download the `.apk` from the link EAS prints.

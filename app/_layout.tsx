@@ -21,6 +21,7 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false, title: 'NosePrint' }} />
+        <Stack.Screen name="start" options={{ headerShown: false, title: 'NosePrint' }} />
         <Stack.Screen name="crop" options={{ title: 'Crop the nose' }} />
         <Stack.Screen name="editor" options={{ title: 'Design' }} />
         <Stack.Screen name="export" options={{ title: 'Export' }} />
