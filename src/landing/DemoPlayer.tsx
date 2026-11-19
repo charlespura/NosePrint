@@ -46,6 +46,11 @@ const PREVIEW = (() => {
 interface Voice { el: HTMLAudioElement; ok: boolean; dur: number }
 
 export function DemoPlayer({ onTry }: { onTry: () => void }) {
+  const [pv, setPv] = useState(PREVIEW);
+  useEffect(() => {
+    if (!PREVIEW) return;
+    (window as unknown as { __demoFrame: (s: number, t: number) => void }).__demoFrame = (s, t) => setPv({ scene: s, t });
+  }, []);
   const [scene, setScene] = useState(0);
   const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -139,11 +144,11 @@ export function DemoPlayer({ onTry }: { onTry: () => void }) {
 
   const total = duration(scene);
   return (
-    <div className="demo" ref={rootRef} tabIndex={0} onKeyDown={onKey} aria-label="Interactive demo of NosePrint">
+    <div className={`demo ${PREVIEW ? 'render' : ''}`} ref={rootRef} tabIndex={0} onKeyDown={onKey} aria-label="Interactive demo of NosePrint">
       <div className="demo-stage">
         <div className="phone" aria-hidden>
           <div className="phone-notch" />
-          {started ? <Screen scene={scene} t={t} /> : <Screen scene={PREVIEW?.scene ?? 3} t={PREVIEW?.t ?? 6000} />}
+          {started ? <Screen scene={scene} t={t} /> : <Screen scene={pv?.scene ?? 3} t={pv?.t ?? 6000} />}
           {!started && !PREVIEW && (
             <button className="poster" onClick={toggle} aria-label="Play the demo">
               <span className="poster-play">▶</span>
@@ -195,32 +200,53 @@ export function DemoPlayer({ onTry }: { onTry: () => void }) {
 
 // ---------------- the phone screen ----------------
 
-function Screen({ scene, t }: { scene: number; t: number }) {
-  // shared "art" element — morphs between scenes with CSS transitions
-  let artTransform = 'translate(0px,0px) scale(1)';
-  let artFilter = 'none';
-  if (scene === 0) {
-    const f = prog(t, 0, 1800);
-    artTransform = `scale(${1.55 - 0.55 * f})`;
-    artFilter = `blur(${(1 - f) * 7}px)`;
-  } else if (scene === 1) {
-    const f = prog(t, 300, 2200);
-    artTransform = `translate(${(1 - f) * 18}px, ${(1 - f) * -12}px) scale(${1.18 - 0.18 * f})`;
-  } else if (scene >= 3) {
-    artTransform = `translate(0px, ${HEART_TARGET_CY - ART_CY}px) scale(${HEART_SCALE})`;
-  }
+interface ArtState { x: number; y: number; s: number; blur: number }
+const END = 1e9;
+function artState(scene: number, t: number): ArtState {
+  if (scene === 0) { const f = prog(t, 0, 1800); return { x: 0, y: 0, s: 1.55 - 0.55 * f, blur: (1 - f) * 7 }; }
+  if (scene === 1) { const f = prog(t, 300, 2200); return { x: (1 - f) * 18, y: (1 - f) * -12, s: 1.18 - 0.18 * f, blur: 0 }; }
+  if (scene === 2) return { x: 0, y: 0, s: 1, blur: 0 };
+  return { x: 0, y: HEART_TARGET_CY - ART_CY, s: HEART_SCALE, blur: 0 };
+}
+const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+function mixHex(a: string, b: string, k: number) {
+  const p = (h: string, i: number) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
+  return '#' + [0, 1, 2].map((i) => Math.round(lerp(p(a, i), p(b, i), k)).toString(16).padStart(2, '0')).join('');
+}
+/** 0→1→0 envelope: fades in at `a`, out at `b` (ms), each over `f` ms. */
+const env = (t: number, a: number, b: number, f = 280) => Math.min(clamp((t - a) / f), clamp((b - t) / f));
 
-  // style layers
+const ORDER = ['sketch', 'fineline', 'stencil', 'dotwork', 'bold', 'sketch'] as const;
+const SWITCH0 = 3000, SWITCH_EVERY = 1150, FADE = 450;
+
+/** Everything is a pure function of (scene, t), so live playback, pausing and frame-by-frame video export match. */
+function Screen({ scene, t }: { scene: number; t: number }) {
+  // shared "art" element: morphs from the previous scene's end state over 900 ms
+  const to = artState(scene, t);
+  const k = scene > 0 ? ease(t / 900) : 1;
+  const from = scene > 0 ? artState(scene - 1, END) : to;
+  const a = { x: lerp(from.x, to.x, k), y: lerp(from.y, to.y, k), s: lerp(from.s, to.s, k), blur: lerp(from.blur, to.blur, k) };
+  const artTransform = `translate(${a.x}px, ${a.y}px) scale(${a.s})`;
+  const artFilter = a.blur > 0.05 ? `blur(${a.blur}px)` : 'none';
+
+  // style layers with time-based cross-fades
   const reveal = scene < 2 ? 0 : scene === 2 ? prog(t, 500, 1900) : 1;
   const photoOpacity = scene < 2 ? 1 : scene === 2 ? 1 - prog(t, 2500, 500) : 0;
-  const order = ['sketch', 'fineline', 'stencil', 'dotwork', 'bold', 'sketch'] as const;
-  const styleIdx = scene === 2 && t > 3000 ? Math.min(order.length - 1, Math.floor((t - 3000) / 1150)) : 0;
-  const current = scene === 2 ? order[styleIdx] : 'sketch';
-  const sepia = scene === 3 ? t > 4300 : scene > 3;
-  const inkColor = sepia ? '#5E3C28' : '#111111';
+  const idx = scene === 2 && t > SWITCH0 ? Math.min(ORDER.length - 1, Math.floor((t - SWITCH0) / SWITCH_EVERY)) : 0;
+  const current = scene === 2 ? ORDER[idx] : 'sketch';
+  const prev = idx > 0 ? ORDER[idx - 1] : null;
+  const fadeK = idx > 0 ? clamp((t - (SWITCH0 + idx * SWITCH_EVERY)) / FADE) : 1;
+  const sepiaK = scene === 3 ? prog(t, 4300, FADE) : scene > 3 ? 1 : 0;
+  const styleOpacity = (s: string) => {
+    let o = s === current ? fadeK : s === prev && prev !== current ? 1 - fadeK : 0;
+    if (s === 'sketch' && current === 'sketch' && prev === 'bold') o = fadeK;
+    return o * (1 - sepiaK);
+  };
+  const inkColor = mixHex('#111111', '#5E3C28', sepiaK);
 
   // group transform for export scene
   const groupT = scene === 4 ? `scale(${1 - 0.3 * prog(t, 0, 700)})` : 'none';
+  const uiIn = prog(t, 0, 380);
 
   return (
     <div className={`screen ${scene === 0 ? 'dark' : ''}`}>
@@ -235,9 +261,9 @@ function Screen({ scene, t }: { scene: number; t: number }) {
           <img src={A('nose-photo.png')} alt="" className="layer" style={{ opacity: photoOpacity }} />
           <div className="layer paper" style={{ clipPath: `inset(0 ${100 - reveal * 100}% 0 0)`, opacity: scene < 2 ? 0 : 1 }}>
             {STYLES.map((s) => (
-              <img key={s} src={A(`nose-${s}.png`)} alt="" className="layer fade" style={{ opacity: !sepia && current === s ? 1 : 0 }} />
+              <img key={s} src={A(`nose-${s}.png`)} alt="" className="layer" style={{ opacity: styleOpacity(s) }} />
             ))}
-            <img src={A('nose-sketch-sepia.png')} alt="" className="layer fade" style={{ opacity: sepia ? 1 : 0 }} />
+            <img src={A('nose-sketch-sepia.png')} alt="" className="layer" style={{ opacity: sepiaK }} />
           </div>
           {scene === 2 && reveal > 0 && reveal < 1 && <div className="scanline" style={{ left: `${reveal * 100}%` }} />}
         </div>
@@ -245,11 +271,13 @@ function Screen({ scene, t }: { scene: number; t: number }) {
         {scene >= 3 && <HeartAndName scene={scene} t={t} ink={inkColor} />}
       </div>
 
-      {scene === 0 && <CameraUI t={t} />}
-      {scene === 1 && <CropUI t={t} />}
-      {scene === 2 && <StyleUI t={t} current={current} />}
-      {scene === 3 && <PersonaliseUI t={t} sepia={sepia} />}
-      {scene === 4 && <ExportUI t={t} />}
+      <div className="ui" style={{ opacity: uiIn, transform: `translateY(${(1 - uiIn) * 10}px)` }}>
+        {scene === 0 && <CameraUI t={t} />}
+        {scene === 1 && <CropUI t={t} />}
+        {scene === 2 && <StyleUI t={t} current={current} />}
+        {scene === 3 && <PersonaliseUI t={t} sepia={sepiaK > 0.5} />}
+        {scene === 4 && <ExportUI t={t} />}
+      </div>
     </div>
   );
 }
@@ -265,7 +293,7 @@ function CameraUI({ t }: { t: number }) {
       <div className="brackets" style={{ transform: `scale(${1.12 - 0.12 * focus})`, opacity: 0.4 + 0.6 * focus }}>
         <i /><i /><i /><i />
       </div>
-      <div className={`hint ${sharp ? 'show' : ''}`}>✓ Nice and sharp</div>
+      <div className="hint" style={{ opacity: env(t, 3500, 1e9), transform: `translate(-50%, ${(1 - env(t, 3500, 1e9)) * 8}px)` }}>✓ Nice and sharp</div>
       <div className="shutter-row">
         <span className="thumb" style={{ opacity: sharp ? 1 : 0, backgroundImage: `url(${A('nose-photo.png')})` }} />
         <span className="shutter" style={{ transform: `scale(${shutter ? 0.86 : 1})` }} />
@@ -347,8 +375,8 @@ function PersonaliseUI({ t, sepia }: { t: number; sepia: boolean }) {
 
 function ExportUI({ t }: { t: number }) {
   const up = prog(t, 150, 650);
-  const toast1 = t > 2350 && t < 4300;
-  const toast2 = t > 4850;
+  const toast1 = env(t, 2350, 4300);
+  const toast2 = env(t, 4850, 1e9);
   return (
     <>
       <div className="sheet" style={{ transform: `translateY(${(1 - up) * 105}%)` }}>
@@ -358,8 +386,8 @@ function ExportUI({ t }: { t: number }) {
       </div>
       <Finger x={150} y={474} at={1900} t={t} />
       <Finger x={150} y={530} at={4400} t={t} />
-      <div className={`toast ${toast1 ? 'show' : ''}`}>✓ Saved to Photos</div>
-      <div className={`toast ${toast2 ? 'show' : ''}`}>✓ Ready to send to your artist</div>
+      <div className="toast" style={{ opacity: toast1, transform: `translate(-50%, ${(1 - toast1) * -12}px)` }}>✓ Saved to Photos</div>
+      <div className="toast" style={{ opacity: toast2, transform: `translate(-50%, ${(1 - toast2) * -12}px)` }}>✓ Ready to send to your artist</div>
     </>
   );
 }
