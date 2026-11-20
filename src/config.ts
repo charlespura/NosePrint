@@ -1,7 +1,10 @@
 // Deployment settings.
 
-/** Sub-path the web app is served from (e.g. "/NosePrint" on GitHub Pages). Set via app.json experiments.baseUrl. */
-export const BASE_URL = (process.env.EXPO_BASE_URL ?? '').replace(/\/$/, '');
+/**
+ * Prefix for files in public/ (e.g. "/NosePrint" on GitHub Pages, from app.json experiments.baseUrl).
+ * The dev server serves public/ from the root, so it is empty in development.
+ */
+export const BASE_URL = __DEV__ ? '' : (process.env.EXPO_BASE_URL ?? '').replace(/\/$/, '');
 
 /**
  * Android APK download link shown on the web Home screen.

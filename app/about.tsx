@@ -105,6 +105,13 @@ export default function About() {
           <Text style={{ color: t.bg, fontSize: 17, fontWeight: '700' }}>Follow @charlespura on GitHub ↗</Text>
         </Pressable>
       </Section>
+      <Pressable
+        accessibilityRole="link"
+        onPress={() => Linking.openURL('https://charlespura.github.io/NosePrint/privacy.html')}
+        style={{ marginTop: space(4), paddingVertical: space(2), alignItems: 'center' }}
+      >
+        <Text style={{ color: t.textMuted ?? t.text, textDecorationLine: 'underline' }}>Privacy Policy</Text>
+      </Pressable>
     </Screen>
   );
 }

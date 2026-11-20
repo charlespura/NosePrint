@@ -82,6 +82,8 @@ export default function Editor() {
   useEffect(() => {
     if (!work) return;
     Object.assign(session, st);
+    // Show the spinner immediately while the debounced render is pending.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setBusy(true);
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(async () => {

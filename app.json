@@ -20,11 +20,11 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.noseprint.app",
       "permissions": [
-        "android.permission.RECORD_AUDIO",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
         "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
         "android.permission.READ_MEDIA_VIDEO",
         "android.permission.READ_MEDIA_AUDIO"
       ]
@@ -45,14 +45,18 @@
         "expo-image-picker",
         {
           "photosPermission": "NosePrint needs your photos to turn your dog's nose into line art.",
-          "cameraPermission": "NosePrint uses the camera to photograph your dog's nose."
+          "cameraPermission": "NosePrint uses the camera to photograph your dog's nose.",
+          "microphonePermission": false
         }
       ],
       [
         "expo-media-library",
         {
           "photosPermission": "NosePrint saves your designs to your photo library.",
-          "savePhotosPermission": "NosePrint saves your designs to your photo library."
+          "savePhotosPermission": "NosePrint saves your designs to your photo library.",
+          "granularPermissions": [
+            "photo"
+          ]
         }
       ],
       "expo-asset",

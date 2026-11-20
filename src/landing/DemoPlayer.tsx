@@ -1,3 +1,5 @@
+/* Web-only marketing demo: refs are read in event/animation handlers, not during render. */
+/* eslint-disable react-hooks/refs, react-hooks/preserve-manual-memoization */
 // Clickable, narrated story demo of the app (web only). Everything is driven by one
 // clock (`t` ms into the current scene) so pause / seek / replay stay perfectly in sync.
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -27,7 +29,7 @@ const prog = (t: number, start: number, dur: number) => ease((t - start) / dur);
 const pulse = (t: number, at: number, len: number) => (t >= at && t <= at + len ? Math.sin(((t - at) / len) * Math.PI) : 0);
 
 // ---- geometry of the phone screen (CSS px) ----
-const SW = 300, SH = 620;
+const SW = 300;
 const ART = { x: 20, y: 104, size: 260 };
 const HEART = FRAMES.heart;
 const HEART_SCALE = 0.56;
@@ -158,7 +160,7 @@ export function DemoPlayer({ onTry }: { onTry: () => void }) {
           )}
           {ended && (
             <div className="endcard">
-              <p className="endcard-kicker">That's it.</p>
+              <p className="endcard-kicker">That&apos;s it.</p>
               <p className="endcard-title">Now try it with your dog.</p>
               <button className="btn btn-primary" onClick={onTry}>Open NosePrint</button>
               <button className="btn btn-ghost" onClick={() => goTo(0)}>↺ Watch again</button>

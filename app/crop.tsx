@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, LayoutChangeEvent, PanResponder, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Body, Button, Card, Screen, Segmented, SliderRow } from '../src/components/ui';
@@ -47,11 +47,15 @@ export default function Crop() {
   }, [size, zoom, center, box]);
 
   const geomRef = useRef(geom);
-  geomRef.current = geom;
   const start = useRef({ x: 0.5, y: 0.5 });
   const centerRef = useRef(center);
-  centerRef.current = center;
+  useLayoutEffect(() => {
+    geomRef.current = geom;
+    centerRef.current = center;
+  }, [geom, center]);
 
+  // Refs are only read inside gesture callbacks, not during render.
+  // eslint-disable-next-line react-hooks/refs
   const pan = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,

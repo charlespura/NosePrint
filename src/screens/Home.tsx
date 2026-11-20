@@ -51,7 +51,7 @@ export default function Home() {
         <View style={styles.hero}>
           <Image source={require('../../assets/icon.png')} style={styles.logo} accessibilityIgnoresInvertColors />
           <Text style={[styles.title, { color: t.text }]}>NosePrint</Text>
-          <Body muted>Turn your dog's one-of-a-kind nose into tattoo-ready line art.</Body>
+          <Body muted>Turn your dog&apos;s one-of-a-kind nose into tattoo-ready line art.</Body>
         </View>
         <View style={{ gap: space(3) }}>
           <Button icon="📷" label="Take Photo" onPress={() => pick('camera')} loading={busy === 'camera'} disabled={!!busy} />

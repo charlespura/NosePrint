@@ -33,10 +33,6 @@ export default function Export() {
     }
   }
 
-  const H = ({ children }: { children: string }) => (
-    <Text style={{ color: t.text, fontSize: 18, fontWeight: '700', marginBottom: space(1) }}>{children}</Text>
-  );
-
   return (
     <Screen>
       <Card>
@@ -45,13 +41,13 @@ export default function Export() {
       </Card>
 
       <Card style={{ marginTop: space(4) }}>
-        <H>PNG · high resolution</H>
+        <H color={t.text}>PNG · high resolution</H>
         <Body muted>{src ? `${src.width} × ${src.height} px` : ''}. Best for printing, phones and social media.</Body>
         <Button label="Download PNG" icon="⬇" onPress={() => run('save', 'png')} loading={job === 'save-png'} disabled={!!job} style={{ marginTop: space(3) }} />
       </Card>
 
       <Card style={{ marginTop: space(4) }}>
-        <H>SVG · vector for tattoo artists</H>
+        <H color={t.text}>SVG · vector for tattoo artists</H>
         <Body muted>Scales to any size without blurring. Opens in Illustrator, Inkscape, Procreate and stencil printers.</Body>
         <Button
           label={Platform.OS === 'web' ? 'Download SVG' : 'Save SVG to Files…'}
@@ -65,7 +61,7 @@ export default function Export() {
       </Card>
 
       <Card style={{ marginTop: space(4) }}>
-        <H>Share</H>
+        <H color={t.text}>Share</H>
         <Body muted>Send to your tattoo artist through WhatsApp, Messenger, email and more.</Body>
         <Button label="Share PNG" icon="↗" variant="secondary" onPress={() => run('share', 'png')} loading={job === 'share-png'} disabled={!!job} style={{ marginTop: space(3) }} />
         <Button label="Share SVG" icon="↗" variant="ghost" onPress={() => run('share', 'svg')} loading={job === 'share-svg'} disabled={!!job} />
@@ -74,4 +70,8 @@ export default function Export() {
       {msg && <Text style={{ color: t.text, marginTop: space(4), textAlign: 'center' }}>{msg}</Text>}
     </Screen>
   );
+}
+
+function H({ children, color }: { children: string; color: string }) {
+  return <Text style={{ color, fontSize: 18, fontWeight: '700', marginBottom: space(1) }}>{children}</Text>;
 }
